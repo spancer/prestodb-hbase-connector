@@ -15,7 +15,6 @@ public class HbaseConfig {
   private String hbaseMaster;
   private String zooKeepers;
   private String zkMetadataRoot = "/presto-hbase";
-  private boolean readToInternalTablesEnabled = true;// Can read internal HBase table by default.
   private boolean dropToInternalTablesEnabled = false;// Can't drop internal HBase table by default.
 
   public String getHbaseMaster() {
@@ -50,18 +49,6 @@ public class HbaseConfig {
   @ConfigDescription("Sets the root znode for metadata storage")
   public void setZkMetadataRoot(String zkMetadataRoot) {
     this.zkMetadataRoot = zkMetadataRoot;
-  }
-
-  @Config("hbase.internal.table.read.enabled")
-  @ConfigDescription("Enable read to non-presto-managed (internal HBase) tables")
-  public HbaseConfig setReadToInternalTablesEnabled(boolean readToInternalTablesEnabled) {
-    this.readToInternalTablesEnabled = readToInternalTablesEnabled;
-    return this;
-  }
-
-  @NotNull
-  public boolean isReadToInternalTablesEnabled() {
-    return readToInternalTablesEnabled;
   }
 
   @Config("hbase.internal.table.drop.enabled")

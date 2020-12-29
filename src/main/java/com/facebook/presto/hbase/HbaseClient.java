@@ -258,21 +258,19 @@ public final class HbaseClient {
   }
 
   public Set<String> getSchemaNames() {
-    // If read internal HBase table is enabled, this means HBase table already exists before create
-    // it in presto,
-    // get schemas names from hbase metadata by HBase API.
-    if (hbaseConfig.isReadToInternalTablesEnabled())
-      return tableManager.getHbaseSchemaNames();
-    else
-      return metaManager.getSchemaNames();
+    Set<String> schemas = metaManager.getSchemaNames();
+    if (schemas.isEmpty())
+      schemas = tableManager.getHbaseSchemaNames();
+    return schemas;
   }
 
   public Set<String> getTableNames(String schema) {
     requireNonNull(schema, "schema is null");
-    if (hbaseConfig.isReadToInternalTablesEnabled())
-      return tableManager.getHbaseTableNames(schema);
-    else
-      return metaManager.getTableNames(schema);
+    Set<String> tables = metaManager.getTableNames(schema);
+    if (tables.isEmpty())
+      tableManager.getHbaseTableNames(schema);
+    return tables;
+
   }
 
   public HbaseTable getTable(SchemaTableName table) {

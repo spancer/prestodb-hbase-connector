@@ -25,7 +25,6 @@ mvn clean install
 connector.name=hbase
 hbase.zookeepers=itserver21:2181,itserver22:2181,itserver23:2181
 hbase.internal.table.drop.enabled=true
-hbase.internal.table.read.enabled=true
 
 ```
 ### Example of use
