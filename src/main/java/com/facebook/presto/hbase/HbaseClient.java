@@ -259,25 +259,24 @@ public final class HbaseClient {
 
   public Set<String> getSchemaNames() {
     Set<String> schemas = metaManager.getSchemaNames();
-    if (schemas.isEmpty())
-      schemas = tableManager.getHbaseSchemaNames();
+    schemas.addAll(tableManager.getHbaseSchemaNames());
     return schemas;
   }
 
   public Set<String> getTableNames(String schema) {
     requireNonNull(schema, "schema is null");
     Set<String> tables = metaManager.getTableNames(schema);
-    if (tables.isEmpty())
-      tableManager.getHbaseTableNames(schema);
+    tables.addAll(tableManager.getHbaseTableNames(schema));
     return tables;
 
   }
 
+  // Get table info from metadata firstly, if none, get from HBase then.
   public HbaseTable getTable(SchemaTableName table) {
     requireNonNull(table, "schema table name is null");
     HbaseTable hTable = metaManager.getTable(table);
-    LOG.debug("Meta meta is null?" + String.valueOf(hTable == null));
-    if (null == hTable)
+    LOG.debug("MetaManager.getTable is NULL?" + String.valueOf(hTable == null));
+    if (null == hTable && tableManager.exists(table.getSchemaName(), table.getTableName()))
       hTable = tableManager.getTable(table);
     return hTable;
   }
