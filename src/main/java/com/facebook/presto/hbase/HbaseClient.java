@@ -275,7 +275,11 @@ public final class HbaseClient {
 
   public HbaseTable getTable(SchemaTableName table) {
     requireNonNull(table, "schema table name is null");
-    return metaManager.getTable(table);
+    HbaseTable hTable = metaManager.getTable(table);
+    LOG.debug("Meta meta is null?" + String.valueOf(hTable == null));
+    if (null == hTable)
+      hTable = tableManager.getTable(table);
+    return hTable;
   }
 
   public Set<String> getViewNames(String schema) {

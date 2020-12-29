@@ -15,7 +15,7 @@ import static com.google.common.base.MoreObjects.toStringHelper;
 import static java.util.Objects.requireNonNull;
 
 /**
- * This class encapsulates metadata regarding an Hbase table in Presto.
+ * This class encapsulates metadata regarding an HBase table in Presto.
  */
 public class HbaseTable {
   private final Integer rowIdOrdinal;
@@ -51,14 +51,10 @@ public class HbaseTable {
         rowIdOrdinal = Optional.of(column.getOrdinal());
       }
     }
-
-    if (rowIdOrdinal.isPresent()) {
+    if(rowIdOrdinal.isPresent())
       this.rowIdOrdinal = rowIdOrdinal.get();
-    } else {
-      throw new IllegalArgumentException(
-          "rowIdOrdinal is null, enable to locate rowId in given column list");
-    }
-
+    else
+      this.rowIdOrdinal = 0;
     this.indexed = indexed;
     this.columnsMetadata = columnMetadataBuilder.build();
     this.schemaTableName = new SchemaTableName(this.schema, this.table);

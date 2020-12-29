@@ -9,6 +9,8 @@ import static java.util.Objects.requireNonNull;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.NavigableMap;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -21,10 +23,21 @@ import org.apache.hadoop.hbase.TableNotFoundException;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.ColumnFamilyDescriptor;
 import org.apache.hadoop.hbase.client.Connection;
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.ResultScanner;
+import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.client.TableDescriptor;
 import org.apache.hadoop.hbase.client.TableDescriptorBuilder;
+import org.apache.hadoop.hbase.util.Bytes;
 
+import com.facebook.presto.common.type.VarcharType;
+import com.facebook.presto.hbase.conf.HbaseTableProperties;
+import com.facebook.presto.hbase.metadata.HbaseTable;
+import com.facebook.presto.hbase.model.HbaseColumnHandle;
 import com.facebook.presto.spi.PrestoException;
+import com.facebook.presto.spi.SchemaTableName;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import io.airlift.log.Logger;
@@ -156,6 +169,41 @@ public class HbaseTableManager {
       throw new PrestoException(UNEXPECTED_HBASE_ERROR, "Only empty namespace can be deleted.", e);
     }
 
+  }
+
+  /**
+   * Get HBase table metadata using hbase client api.
+   */
+  public HbaseTable getTable(SchemaTableName schemaTable) {
+    TableName hTableName = TableName.valueOf(schemaTable.getSchemaName().getBytes(),
+        schemaTable.getTableName().getBytes());
+    TableDescriptor hTableDescriptor = null;
+    ImmutableList.Builder<HbaseColumnHandle> builder = ImmutableList.builder();
+    try (Admin admin = connection.getAdmin()) {
+      hTableDescriptor = admin.getDescriptor(hTableName);
+      Table hTable = connection.getTable(hTableName);
+      ResultScanner scanner = hTable.getScanner(new Scan());
+      Result result = scanner.next();
+      if (null != result) {
+        int index = 0;
+        for (ColumnFamilyDescriptor cfd : hTableDescriptor.getColumnFamilies()) {
+          NavigableMap<byte[], byte[]> cellData = result.getFamilyMap(cfd.getName());
+          for (byte[] columnName : cellData.keySet()) {
+            index++;
+            // TODO Right now set Type to varchar & comment to empty string.
+            builder.add(new HbaseColumnHandle(Bytes.toString(columnName),
+                Optional.of(Bytes.toString(cfd.getName())), Optional.of(Bytes.toString(columnName)),
+                VarcharType.VARCHAR, index, "", false));
+          }
+        }
+      }
+    } catch (IOException e) {
+      throw new PrestoException(UNEXPECTED_HBASE_ERROR, "Failed to Get Hbase table", e);
+    }
+    List<HbaseColumnHandle> columns = builder.build();
+    HbaseTable table = new HbaseTable(schemaTable.getSchemaName(), schemaTable.getTableName(),
+        columns, HbaseTableProperties.ROW_ID, null);
+    return table;
   }
 
 
